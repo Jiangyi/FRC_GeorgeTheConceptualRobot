@@ -18,11 +18,12 @@ import edu.wpi.first.wpilibj.Timer;
 public class RobotTemplate extends IterativeRobot {
 
     //Button Constants for Robot Functionality
-    static final int BUTTON_ELEVATOR = 3;
-    static final int BUTTON_EXTENDARM = 4;
+    static final int BUTTON_ELEVATOR = 2;
+    static final int BUTTON_EXTENDARM = 3;
     static final int BUTTON_CLAMP = 1;
-    static final int BUTTON_CAPTURE_IMAGE = 2;
-    static final int BUTTON_RELEASE_AIR = 3;
+    static final int BUTTON_CAPTURE_IMAGE = 11;
+    static final int BUTTON_RELEASE_AIR = 10;
+    static final int BUTTON_AUTOSCORE = 7;
     //Motor Values for Digital Sidecar
     static final int FRONT_LEFT_PWM = 2;
     static final int REAR_LEFT_PWM = 1;
@@ -42,7 +43,6 @@ public class RobotTemplate extends IterativeRobot {
     //Arcade Drive only needs one stick declaration
     //other stick is used for control scheme, if necessary
     Joystick stickDrive = new Joystick(1);
-    Joystick stickControl = new Joystick(2);
     //Robot Drive Object
     RobotDrive mainDrive = new RobotDrive(FRONT_LEFT_PWM, REAR_LEFT_PWM, FRONT_RIGHT_PWM, REAR_RIGHT_PWM);
     //Camera Declaration
@@ -94,17 +94,17 @@ public class RobotTemplate extends IterativeRobot {
         //arcade drive method: (Joystick id, bool squaredInputs)
         mainDrive.arcadeDrive(stickDrive, true);
         //allows the conveyor belt to be controlled by zaxis
-        fConvSpeed = (float) stickControl.getAxis(Joystick.AxisType.kZ);
+        fConvSpeed = (float) stickDrive.getAxis(Joystick.AxisType.kZ);
 
         //raises or lowers conveyor based on z axis on control stick
-        if (stickControl.getRawButton(BUTTON_ELEVATOR)) {
-            conveyorPickup.set(fConvSpeed);
+        if (stickDrive.getRawButton(BUTTON_ELEVATOR)) {
+            conveyorPickup.set(-fConvSpeed);
         } else {
             conveyorPickup.set(0.0);
         }
         
         //Extend pistons upon button press. If piston already extended, contract pistons instead.
-        if (stickControl.getRawButton(BUTTON_EXTENDARM) && iAirLoopCounter == 0) {
+        if (stickDrive.getRawButton(BUTTON_EXTENDARM) && iAirLoopCounter == 0) {
             if (pistonRaise.get() == DoubleSolenoid.Value.kForward
                     && pistonExtend.get() == DoubleSolenoid.Value.kForward) {
                 pistonRaise.set(DoubleSolenoid.Value.kReverse);
@@ -116,7 +116,7 @@ public class RobotTemplate extends IterativeRobot {
             iAirLoopCounter = 10;
         }
 
-        if (stickControl.getRawButton(BUTTON_CLAMP) && iAirLoopCounter == 0) {
+        if (stickDrive.getRawButton(BUTTON_CLAMP) && iAirLoopCounter == 0) {
             if (pistonClamp.get() == DoubleSolenoid.Value.kForward) {
                 pistonClamp.set(DoubleSolenoid.Value.kReverse);
             } else {
@@ -129,7 +129,7 @@ public class RobotTemplate extends IterativeRobot {
             iAirLoopCounter --;
         }
             
-        if (stickDrive.getTrigger()) {
+        if (stickDrive.getRawButton(BUTTON_AUTOSCORE)) {
             scoreGoal();
         }
         //release pressure
@@ -143,7 +143,7 @@ public class RobotTemplate extends IterativeRobot {
             mainCompressor.stop();
         }
         //camera image capture construct
-        if (stickControl.getRawButton(BUTTON_CAPTURE_IMAGE) && camera.freshImage()) {
+        if (stickDrive.getRawButton(BUTTON_CAPTURE_IMAGE) && camera.freshImage()) {
             try {
                 currentImage = camera.getImage();
                 currentImage.write("originalCapture.jpg");
