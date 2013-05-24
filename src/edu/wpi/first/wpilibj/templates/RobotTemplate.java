@@ -55,7 +55,7 @@ public class RobotTemplate extends IterativeRobot {
     Victor conveyorPickup = new Victor(5);
     //Air Compressor Object
     //constructor: pressureSwitchChannel, compressorRelayChannel
-    Compressor mainCompressor = new Compressor(2, 5);
+    Compressor mainCompressor = new Compressor(1, 5);
     //Solenoids - used for pistons
     DoubleSolenoid pistonExtend = new DoubleSolenoid(1, 2);
     DoubleSolenoid pistonClamp = new DoubleSolenoid(3, 4);
@@ -67,6 +67,9 @@ public class RobotTemplate extends IterativeRobot {
     public void robotInit() {
         //starts air compressor
         mainCompressor.start();
+        pistonExtend.set(DoubleSolenoid.Value.kOff);
+        pistonClamp.set(DoubleSolenoid.Value.kOff);
+        pistonRaise.set(DoubleSolenoid.Value.kOff);
     }
 
     /**
@@ -95,7 +98,6 @@ public class RobotTemplate extends IterativeRobot {
         mainDrive.arcadeDrive(stickDrive, true);
         //allows the conveyor belt to be controlled by zaxis
         fConvSpeed = (float) stickDrive.getAxis(Joystick.AxisType.kZ);
-
         //raises or lowers conveyor based on z axis on control stick
         if (stickDrive.getRawButton(BUTTON_ELEVATOR)) {
             conveyorPickup.set(-fConvSpeed);
@@ -104,7 +106,7 @@ public class RobotTemplate extends IterativeRobot {
         }
         
         //Extend pistons upon button press. If piston already extended, contract pistons instead.
-        if (stickDrive.getRawButton(BUTTON_EXTENDARM) && iAirLoopCounter == 0) {
+        if (stickDrive.getRawButton(BUTTON_EXTENDARM)) {
             if (pistonRaise.get() == DoubleSolenoid.Value.kForward
                     && pistonExtend.get() == DoubleSolenoid.Value.kForward) {
                 pistonRaise.set(DoubleSolenoid.Value.kReverse);
@@ -113,34 +115,29 @@ public class RobotTemplate extends IterativeRobot {
                 pistonRaise.set(DoubleSolenoid.Value.kForward);
                 pistonExtend.set(DoubleSolenoid.Value.kForward);
             }
-            iAirLoopCounter = 10;
         }
 
-        if (stickDrive.getRawButton(BUTTON_CLAMP) && iAirLoopCounter == 0) {
+        if (stickDrive.getRawButton(BUTTON_CLAMP)) {
             if (pistonClamp.get() == DoubleSolenoid.Value.kForward) {
                 pistonClamp.set(DoubleSolenoid.Value.kReverse);
             } else {
                 pistonClamp.set(DoubleSolenoid.Value.kForward);
             }
-            iAirLoopCounter = 10;
         }
         
-        if (iAirLoopCounter > 0) {
-            iAirLoopCounter --;
-        }
             
         if (stickDrive.getRawButton(BUTTON_AUTOSCORE)) {
             scoreGoal();
         }
         //release pressure
-        if (stickDrive.getRawButton(BUTTON_RELEASE_AIR) || iAirLoopCounter == 0) {
+        if (stickDrive.getRawButton(BUTTON_RELEASE_AIR)) {
             pistonClamp.set(DoubleSolenoid.Value.kOff);
             pistonExtend.set(DoubleSolenoid.Value.kOff);
             pistonRaise.set(DoubleSolenoid.Value.kOff);
         }
         
-        if (mainCompressor.getPressureSwitchValue()) {
-            mainCompressor.stop();
+       if (mainCompressor.getPressureSwitchValue()) {
+         mainCompressor.stop();
         }
         //camera image capture construct
         if (stickDrive.getRawButton(BUTTON_CAPTURE_IMAGE) && camera.freshImage()) {
