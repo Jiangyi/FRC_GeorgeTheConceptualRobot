@@ -21,6 +21,7 @@ public class RobotTemplate extends IterativeRobot {
     static final int BUTTON_ELEVATOR = 2;
     static final int BUTTON_EXTENDARM = 3;
     static final int BUTTON_CLAMP = 1;
+    static final int BUTTON_RAISE = 4;
     static final int BUTTON_CAPTURE_IMAGE = 11;
     static final int BUTTON_RELEASE_AIR = 10;
     static final int BUTTON_AUTOSCORE = 7;
@@ -36,8 +37,10 @@ public class RobotTemplate extends IterativeRobot {
     static final int SAT_HIGH = 204;
     static final int VAL_LOW = 204;
     static final int VAL_HIGH = 242;
-    static boolean BUTTON_EXTEND_HELD;
-    static boolean BUTTON_CLAMP_HELD;
+    static boolean buttonExtendHeld;
+    static boolean buttonClampHeld;
+    static boolean buttonRaiseHeld;
+    static boolean buttonReleaseHeld;
     float fConvSpeed = 0.0f;
     //Debugging Console Instance
     DriverStationLCD debugConsole = DriverStationLCD.getInstance();
@@ -63,7 +66,6 @@ public class RobotTemplate extends IterativeRobot {
     DoubleSolenoid pistonClamp = new DoubleSolenoid(3, 4);
     DoubleSolenoid pistonRaise = new DoubleSolenoid(5, 6);
     boolean bAutoRun = false;
-    int iAirLoopCounter = 0;
 
     public void robotInit() {
         //starts air compressor
@@ -77,15 +79,16 @@ public class RobotTemplate extends IterativeRobot {
      * This function is called periodically during autonomous
      */
     public void autonomousPeriodic() {
-
+        if (bAutoRun == false) {
         for (int counter = 0; counter < 6; counter++) {
-            mainDrive.drive(0.75, 0.0);
-            conveyorPickup.set(0.7);
+            mainDrive.drive(-0.75, 0.0);
+            conveyorPickup.set(-0.9);
             Timer.delay(0.5);
         }
 
-        conveyorPickup.set(0.0);
         scoreGoal();
+        bAutoRun = true;
+        }
 
 
 
@@ -108,32 +111,42 @@ public class RobotTemplate extends IterativeRobot {
 
         //Extend pistons upon button press. If piston already extended, contract pistons instead.
         if (stickDrive.getRawButton(BUTTON_EXTENDARM)) {
-            if (!BUTTON_EXTEND_HELD) {
-                if (pistonRaise.get() == DoubleSolenoid.Value.kForward
-                        && pistonExtend.get() == DoubleSolenoid.Value.kForward) {
-                    pistonRaise.set(DoubleSolenoid.Value.kReverse);
+            if (!buttonExtendHeld) {
+                if (pistonExtend.get() == DoubleSolenoid.Value.kForward) {
                     pistonExtend.set(DoubleSolenoid.Value.kReverse);
                 } else {
-                    pistonRaise.set(DoubleSolenoid.Value.kForward);
                     pistonExtend.set(DoubleSolenoid.Value.kForward);
                 }
-                BUTTON_EXTEND_HELD = true;
+                buttonExtendHeld = true;
             }
         } else {
-            BUTTON_EXTEND_HELD = false;
+            buttonExtendHeld = false;
         }
 
         if (stickDrive.getRawButton(BUTTON_CLAMP)) {
-            if (!BUTTON_CLAMP_HELD) {
+            if (!buttonClampHeld) {
                 if (pistonClamp.get() == DoubleSolenoid.Value.kForward) {
                     pistonClamp.set(DoubleSolenoid.Value.kReverse);
                 } else {
                     pistonClamp.set(DoubleSolenoid.Value.kForward);
                 }
-                BUTTON_CLAMP_HELD = true;
+                buttonClampHeld = true;
             }
         } else {
-            BUTTON_CLAMP_HELD = false;
+            buttonClampHeld = false;
+        }
+
+        if (stickDrive.getRawButton(BUTTON_RAISE)) {
+            if (!buttonRaiseHeld) {
+                if (pistonRaise.get() == DoubleSolenoid.Value.kForward) {
+                    pistonRaise.set(DoubleSolenoid.Value.kReverse);
+                } else {
+                    pistonRaise.set(DoubleSolenoid.Value.kForward);
+                }
+                buttonRaiseHeld = true;
+            }
+        } else {
+            buttonRaiseHeld = false;
         }
 
         if (stickDrive.getRawButton(BUTTON_AUTOSCORE)) {
@@ -141,10 +154,20 @@ public class RobotTemplate extends IterativeRobot {
         }
         //release pressure
         if (stickDrive.getRawButton(BUTTON_RELEASE_AIR)) {
-            pistonClamp.set(DoubleSolenoid.Value.kOff);
-            pistonExtend.set(DoubleSolenoid.Value.kOff);
-            pistonRaise.set(DoubleSolenoid.Value.kOff);
-            mainCompressor.stop();
+            if (!buttonReleaseHeld) {
+                if (mainCompressor.enabled()) {
+                    pistonClamp.set(DoubleSolenoid.Value.kOff);
+                    pistonExtend.set(DoubleSolenoid.Value.kOff);
+                    pistonRaise.set(DoubleSolenoid.Value.kOff);
+                    mainCompressor.stop();
+                } else {
+                    mainCompressor.start();
+                }
+                buttonReleaseHeld = true;
+
+            } else {
+                buttonReleaseHeld = false;
+            }
         }
 
         if (mainCompressor.getPressureSwitchValue()) {
@@ -193,19 +216,19 @@ public class RobotTemplate extends IterativeRobot {
 
         //forward motion - clamps ball, extends and raises up
         pistonClamp.set(DoubleSolenoid.Value.kForward);
-        Timer.delay(0.5);
-        pistonRaise.set(DoubleSolenoid.Value.kForward);
         Timer.delay(1.0);
         pistonExtend.set(DoubleSolenoid.Value.kForward);
+        Timer.delay(1.0);
+        pistonRaise.set(DoubleSolenoid.Value.kForward);
 
         Timer.delay(1.0);
 
         //reverse motion - drops ball into hole, and returns to base
         pistonClamp.set(DoubleSolenoid.Value.kReverse);
-        Timer.delay(0.5);
-        pistonExtend.set(DoubleSolenoid.Value.kReverse);
         Timer.delay(1.0);
         pistonRaise.set(DoubleSolenoid.Value.kReverse);
+        Timer.delay(1.0);
+        pistonExtend.set(DoubleSolenoid.Value.kReverse);
 
     }
 }
